@@ -1,0 +1,16 @@
+def wait_until_file_is_unlocked(filepath, timeout=10):
+    """
+    Waits until the file is accessible for reading.
+    """
+    start_time = time.time()
+    while True:
+        try:
+            with open(filepath, 'rb') as f:
+                f.read(1)  # try to read 1 byte
+            break  # success
+        except (PermissionError, OSError):
+            if time.time() - start_time > timeout:
+                raise TimeoutError(f"File is still locked: {filepath}")
+            time.sleep(0.5)
+
+wait_until_file_is_unlocked(file_path)

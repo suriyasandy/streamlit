@@ -1,0 +1,45 @@
+import os
+import pandas as pd
+from collections import defaultdict
+
+def extract_info_from_filename(filename):
+    # Remove extension and split
+    name_parts = filename.replace(".csv.gz", "").split("_")
+    if len(name_parts) < 4:
+        return None
+    product, legal, source, date = name_parts[:4]
+    return (product, legal, source, date)
+
+def consolidate_gzipped_files(input_dir, output_dir):
+    file_groups = defaultdict(list)
+
+    # Step 1: Group by (product, legal, source)
+    for fname in os.listdir(input_dir):
+        if fname.endswith(".csv.gz"):
+            info = extract_info_from_filename(fname)
+            if info:
+                key = tuple(info[:3])  # (product, legal, source)
+                file_groups[key].append((info[3], fname))  # (date, filename)
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Step 2: Consolidate files in each group
+    for (product, legal, source), file_list in file_groups.items():
+        file_list.sort()  # sort by date
+        dates = [f[0] for f in file_list]
+        dfs = []
+
+        for _, fname in file_list:
+            fpath = os.path.join(input_dir, fname)
+            df = pd.read_csv(fpath, compression='gzip')
+            dfs.append(df)
+
+        combined_df = pd.concat(dfs, ignore_index=True)
+        start_date = dates[0]
+        end_date = dates[-1]
+
+        out_name = f"{product}_{legal}_{source}_{start_date}_{end_date}.csv.gz"
+        out_path = os.path.join(output_dir, out_name)
+
+        combined_df.to_csv(out_path, index=False, compression='gzip')
+        print(f"✅ Created: {out_path}")

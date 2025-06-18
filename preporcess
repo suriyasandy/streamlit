@@ -43,3 +43,14 @@ def consolidate_gzipped_files(input_dir, output_dir):
 
         combined_df.to_csv(out_path, index=False, compression='gzip')
         print(f"✅ Created: {out_path}")
+
+
+def remove_filtered_files(directory):
+    for fname in os.listdir(directory):
+        if fname.endswith("filtered"):
+            file_path = os.path.join(directory, fname)
+            try:
+                os.remove(file_path)
+                print(f"🗑️ Removed: {file_path}")
+            except Exception as e:
+                print(f"❌ Error deleting {file_path}: {e}")

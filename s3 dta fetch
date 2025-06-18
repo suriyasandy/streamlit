@@ -26,3 +26,17 @@ def fetch_data(url):
     except Exception as e:
         print(f"Error fetching data: {e}")
         return None
+
+base_url = "https://api.example.com/fetchData"
+
+start_date = "2024-01-01"
+end_date = "2024-12-31"
+legal_entities = ["HBSG", "XYZC"]
+source_systems = ["Murex", "Calypso"]
+product_types = ["FX", "Derivatives"]
+
+url = generate_url(base_url, start_date, end_date, legal_entities, source_systems, product_types)
+print("Generated URL:", url)
+
+data = fetch_data(url)
+

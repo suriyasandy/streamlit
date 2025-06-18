@@ -1,0 +1,45 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+
+st.title("📊 Threshold Recalibration")
+
+uploaded_file = st.file_uploader("Upload Threshold File (.csv)", type=["csv"])
+
+if uploaded_file:
+    df = pd.read_csv(uploaded_file)
+    
+    st.subheader("🧮 Group-wise Threshold Calibration")
+
+    # Extract unique group-level proposed and existing thresholds
+    group_df = df.groupby("Proposed_Group").agg({
+        "Existing_Threshold": "mean",   # or mode/max if needed
+        "Proposed_Threshold": "mean"
+    }).reset_index()
+
+    group_df.rename(columns={
+        "Proposed_Group": "Group",
+        "Existing_Threshold": "Existing Threshold",
+        "Proposed_Threshold": "Proposed Threshold"
+    }, inplace=True)
+
+    # Add editable final threshold column (default = proposed)
+    group_df["Final Threshold"] = group_df["Proposed Threshold"]
+
+    # Let user edit final threshold per group
+    edited_df = st.data_editor(
+        group_df,
+        use_container_width=True,
+        num_rows="dynamic",
+        column_config={
+            "Final Threshold": st.column_config.NumberColumn(step=0.01, help="Edit to simulate recalibration")
+        }
+    )
+
+    st.markdown("✅ Now use this to recompute alert impact on trade dataset.")
+
+    # Optional: show reset or apply logic
+    if st.button("Recompute Alerts with Final Thresholds"):
+        st.success("🚀 Alert impact recalculated (you can now proceed to analysis tab).")
+
+        # You would pass `edited_df` to your thresholding logic

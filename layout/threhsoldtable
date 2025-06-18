@@ -1,19 +1,20 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
-st.title("📊 Threshold Recalibration")
+st.set_page_config(layout="wide")
 
+st.title("📊 Group-wise Threshold Recalibration")
+
+# Step 1: File Upload
 uploaded_file = st.file_uploader("Upload Threshold File (.csv)", type=["csv"])
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
-    
-    st.subheader("🧮 Group-wise Threshold Calibration")
 
-    # Extract unique group-level proposed and existing thresholds
+    # Step 2: Group-wise Aggregation
     group_df = df.groupby("Proposed_Group").agg({
-        "Existing_Threshold": "mean",   # or mode/max if needed
+        "Existing_Threshold": "mean",
         "Proposed_Threshold": "mean"
     }).reset_index()
 
@@ -23,23 +24,38 @@ if uploaded_file:
         "Proposed_Threshold": "Proposed Threshold"
     }, inplace=True)
 
-    # Add editable final threshold column (default = proposed)
+    # Step 3: Add Final Threshold (default = Proposed)
     group_df["Final Threshold"] = group_df["Proposed Threshold"]
 
-    # Let user edit final threshold per group
-    edited_df = st.data_editor(
-        group_df,
+    # Initialize in session state if not already
+    if "group_thresholds" not in st.session_state:
+        st.session_state.group_thresholds = group_df.copy()
+
+    st.subheader("📝 Edit Final Thresholds per Group")
+
+    # Step 4: AGGrid Setup
+    gb = GridOptionsBuilder.from_dataframe(st.session_state.group_thresholds)
+    gb.configure_column("Final Threshold", editable=True)
+    gb.configure_column("Group", editable=False)
+    gb.configure_column("Existing Threshold", editable=False)
+    gb.configure_column("Proposed Threshold", editable=False)
+    grid_options = gb.build()
+
+    grid_response = AgGrid(
+        st.session_state.group_thresholds,
+        gridOptions=grid_options,
+        update_mode=GridUpdateMode.VALUE_CHANGED,
+        fit_columns_on_grid_load=True,
+        height=300,
         use_container_width=True,
-        num_rows="dynamic",
-        column_config={
-            "Final Threshold": st.column_config.NumberColumn(step=0.01, help="Edit to simulate recalibration")
-        }
+        key="group_aggrid"
     )
 
-    st.markdown("✅ Now use this to recompute alert impact on trade dataset.")
+    # Step 5: Update session state with edited data
+    st.session_state.group_thresholds = grid_response["data"]
 
-    # Optional: show reset or apply logic
-    if st.button("Recompute Alerts with Final Thresholds"):
-        st.success("🚀 Alert impact recalculated (you can now proceed to analysis tab).")
+    st.success("✅ Edits captured. You can now use the final thresholds for alert impact analysis.")
 
-        # You would pass `edited_df` to your thresholding logic
+    # Optional display
+    if st.checkbox("Show Final Threshold Table"):
+        st.dataframe(st.session_state.group_thresholds)

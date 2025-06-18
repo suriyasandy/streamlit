@@ -12,28 +12,23 @@ uploaded_file = st.file_uploader("Upload Threshold File (.csv)", type=["csv"])
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
-    # Step 2: Group-wise Aggregation
-    group_df = df.groupby("Proposed_Group").agg({
-        "Existing_Threshold": "mean",
-        "Proposed_Threshold": "mean"
-    }).reset_index()
+    # Step 1: Take only unique rows for each Proposed_Group
+    group_df = df[["Proposed_Group", "Existing_Threshold", "Proposed_Threshold"]].drop_duplicates()
 
-    group_df.rename(columns={
+    group_df = group_df.rename(columns={
         "Proposed_Group": "Group",
         "Existing_Threshold": "Existing Threshold",
         "Proposed_Threshold": "Proposed Threshold"
-    }, inplace=True)
+    })
 
-    # Step 3: Add Final Threshold (default = Proposed)
     group_df["Final Threshold"] = group_df["Proposed Threshold"]
 
-    # Initialize in session state if not already
+    # Step 2: Store in session_state for stateful editing
     if "group_thresholds" not in st.session_state:
         st.session_state.group_thresholds = group_df.copy()
 
-    st.subheader("📝 Edit Final Thresholds per Group")
+    st.subheader("📝 Edit Final Thresholds (Group-Level)")
 
-    # Step 4: AGGrid Setup
     gb = GridOptionsBuilder.from_dataframe(st.session_state.group_thresholds)
     gb.configure_column("Final Threshold", editable=True)
     gb.configure_column("Group", editable=False)
@@ -45,17 +40,16 @@ if uploaded_file:
         st.session_state.group_thresholds,
         gridOptions=grid_options,
         update_mode=GridUpdateMode.VALUE_CHANGED,
-        fit_columns_on_grid_load=True,
         height=300,
         use_container_width=True,
         key="group_aggrid"
     )
 
-    # Step 5: Update session state with edited data
+    # Step 3: Update session state with any user edits
     st.session_state.group_thresholds = grid_response["data"]
 
-    st.success("✅ Edits captured. You can now use the final thresholds for alert impact analysis.")
+    st.success("✅ Final group thresholds updated successfully.")
 
     # Optional display
-    if st.checkbox("Show Final Threshold Table"):
+    if st.checkbox("📄 Show Current Final Threshold Table"):
         st.dataframe(st.session_state.group_thresholds)

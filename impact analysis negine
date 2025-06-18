@@ -96,3 +96,29 @@ def filter_and_evaluate_alerts(
             print(f"Error processing file {file_path}: {e}")
 
     return pd.DataFrame(output_rows)
+
+
+from alert_evaluator import filter_and_evaluate_alerts
+
+if st.sidebar.button("Run Threshold Impact"):
+    initial_inputs_df = build_initial_inputs_df(
+        consolidated_dir="consolidated_gz",
+        selected_product_types=selected_product_types,
+        selected_legal_entities=selected_legal_entities,
+        selected_source_systems=selected_source_systems
+    )
+
+    if not initial_inputs_df.empty and "group_thresholds" in st.session_state:
+        result_df = filter_and_evaluate_alerts(
+            consolidated_dir="consolidated_gz",
+            initial_inputs_df=initial_inputs_df,
+            start_date=start_date.strftime("%Y-%m-%d"),
+            end_date=end_date.strftime("%Y-%m-%d"),
+            final_thresholds_df=st.session_state.group_thresholds
+        )
+
+        st.subheader("📊 Threshold Impact Summary")
+        st.dataframe(result_df)
+    else:
+        st.warning("⚠️ No matching data found or thresholds not defined.")
+

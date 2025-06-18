@@ -1,19 +1,35 @@
-import requests
+from datetime import datetime, timedelta
+import itertools
 from urllib.parse import urlencode
 
-def generate_url(base_url, start_date, end_date, legal_entities, source_systems, product_types):
+def generate_date_range(start_date, end_date):
     """
-    Constructs a URL with all filters applied as query params.
+    Generate a list of YYYY-MM-DD strings between start_date and end_date (inclusive).
     """
-    query_params = {
-        "startDate": start_date,
-        "endDate": end_date,
-        "legalEntity": ",".join(legal_entities),
-        "sourceSystem": ",".join(source_systems),
-        "productType": ",".join(product_types)
-    }
-    full_url = f"{base_url}?{urlencode(query_params)}"
-    return full_url
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    end = datetime.strptime(end_date, "%Y-%m-%d")
+    delta = (end - start).days
+    return [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(delta + 1)]
+
+def generate_all_urls(base_url, start_date, end_date, legal_entities, source_systems, product_types):
+    """
+    Generate all combinations of (date, legal_entity, source_system, product_type) URLs.
+    """
+    date_list = generate_date_range(start_date, end_date)
+    urls = []
+
+    for date, le, ss, pt in itertools.product(date_list, legal_entities, source_systems, product_types):
+        params = {
+            "date": date,
+            "legalEntity": le,
+            "sourceSystem": ss,
+            "productType": pt
+        }
+        url = f"{base_url}?{urlencode(params)}"
+        urls.append(url)
+    
+    return urls
+
 
 def fetch_data(url):
     """

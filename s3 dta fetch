@@ -1,0 +1,28 @@
+import requests
+from urllib.parse import urlencode
+
+def generate_url(base_url, start_date, end_date, legal_entities, source_systems, product_types):
+    """
+    Constructs a URL with all filters applied as query params.
+    """
+    query_params = {
+        "startDate": start_date,
+        "endDate": end_date,
+        "legalEntity": ",".join(legal_entities),
+        "sourceSystem": ",".join(source_systems),
+        "productType": ",".join(product_types)
+    }
+    full_url = f"{base_url}?{urlencode(query_params)}"
+    return full_url
+
+def fetch_data(url):
+    """
+    Fetches data from the generated URL.
+    """
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()  # or .text or .content based on API
+    except Exception as e:
+        print(f"Error fetching data: {e}")
+        return None

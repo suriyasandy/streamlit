@@ -1,0 +1,75 @@
+import pandas as pd
+import os
+
+def filter_and_evaluate_alerts(
+    consolidated_dir: str,
+    initial_inputs_df: pd.DataFrame,
+    start_date: str,
+    end_date: str,
+    final_thresholds_df: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Filters consolidated .csv.gz files based on selected start and end dates and evaluates alerts.
+
+    Parameters:
+    - consolidated_dir: Directory containing consolidated .csv.gz files
+    - initial_inputs_df: DataFrame with columns: ProductType, LegalEntity, SourceSystem, StartDate, EndDate, Existing_Threshold, Proposed_Threshold, Proposed_Group
+    - start_date: User-selected start date (YYYY-MM-DD)
+    - end_date: User-selected end date (YYYY-MM-DD)
+    - final_thresholds_df: DataFrame from AgGrid with columns: Group, Final Threshold
+
+    Returns:
+    - DataFrame with: LegalEntity, SourceSystem, Total Alerts, alerts_wrt_existing, alerts_wrt_proposed, alerts_wrt_recalibrated
+    """
+    output_rows = []
+
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
+
+    for _, row in initial_inputs_df.iterrows():
+        product = row['ProductType']
+        legal_entity = row['LegalEntity']
+        source_system = row['SourceSystem']
+        file_start = row['StartDate']
+        file_end = row['EndDate']
+        group = row['Proposed_Group']
+        existing_thresh = row['Existing_Threshold']
+        proposed_thresh = row['Proposed_Threshold']
+
+        filename = f"{product}_{legal_entity}_{source_system}_{file_start}_{file_end}.csv.gz"
+        file_path = os.path.join(consolidated_dir, filename)
+
+        if not os.path.exists(file_path):
+            continue
+
+        try:
+            df = pd.read_csv(file_path, compression='gzip')
+            df['Date'] = pd.to_datetime(df['Date'])
+
+            df_filtered = df[(df['Date'] >= start_date) & (df['Date'] <= end_date)]
+            if df_filtered.empty:
+                continue
+
+            total_alerts = len(df_filtered)
+
+            # Get final threshold for this group
+            recalib_row = final_thresholds_df[final_thresholds_df["Group"] == group]
+            final_thresh = recalib_row["Final Threshold"].values[0] if not recalib_row.empty else proposed_thresh
+
+            alerts_existing = (df_filtered['abs_dev'] > existing_thresh).sum()
+            alerts_proposed = (df_filtered['abs_dev'] > proposed_thresh).sum()
+            alerts_final = (df_filtered['abs_dev'] > final_thresh).sum()
+
+            output_rows.append({
+                "LegalEntity": legal_entity,
+                "SourceSystem": source_system,
+                "Total Alerts": total_alerts,
+                "alerts_wrt_existing": alerts_existing,
+                "alerts_wrt_proposed": alerts_proposed,
+                "alerts_wrt_recalibrated": alerts_final
+            })
+
+        except Exception as e:
+            print(f"Error processing file {file_path}: {e}")
+
+    return pd.DataFrame(output_rows)

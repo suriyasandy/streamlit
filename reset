@@ -1,0 +1,38 @@
+import streamlit as st
+from datetime import datetime
+
+# --- Define default values ---
+default_base_url = "https://your-api.com/download"
+default_start_date = datetime.today()
+default_end_date = datetime.today()
+default_legal_entities = []
+default_source_systems = []
+default_product_types = []
+
+# --- Reset Button ---
+if st.sidebar.button("🔄 Reset Inputs"):
+    st.session_state["base_url"] = default_base_url
+    st.session_state["start_date"] = default_start_date
+    st.session_state["end_date"] = default_end_date
+    st.session_state["legal_entities"] = default_legal_entities
+    st.session_state["source_systems"] = default_source_systems
+    st.session_state["product_types"] = default_product_types
+
+# --- Sidebar Inputs ---
+st.sidebar.header("Input Parameters")
+
+base_url = st.sidebar.text_input("Base URL", default_base_url, key="base_url")
+start_date = st.sidebar.date_input("Start Date", default_start_date, key="start_date")
+end_date = st.sidebar.date_input("End Date", default_end_date, key="end_date")
+
+legal_entities = st.sidebar.multiselect(
+    "Legal Entities", ["HBSG", "XYZC", "ABC"], default=default_legal_entities, key="legal_entities"
+)
+source_systems = st.sidebar.multiselect(
+    "Source Systems", ["Murex", "Calypso"], default=default_source_systems, key="source_systems"
+)
+product_types = st.sidebar.multiselect(
+    "Product Types", ["FX", "Equity", "Derivatives"], default=default_product_types, key="product_types"
+)
+
+submit_button = st.sidebar.button("Generate URLs")

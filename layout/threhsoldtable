@@ -12,9 +12,10 @@ uploaded_file = st.file_uploader("Upload Threshold File (.csv)", type=["csv"])
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
-    # Step 1: Take only unique rows for each Proposed_Group
-    group_df = df[["Proposed_Group", "Existing_Threshold", "Proposed_Threshold"]].drop_duplicates()
+    # Step 1: Pick the first threshold per group (avoid rounding issues)
+    group_df = df.sort_values(by=["Proposed_Group"]).groupby("Proposed_Group", as_index=False).first()
 
+    # Rename for display
     group_df = group_df.rename(columns={
         "Proposed_Group": "Group",
         "Existing_Threshold": "Existing Threshold",
@@ -23,7 +24,7 @@ if uploaded_file:
 
     group_df["Final Threshold"] = group_df["Proposed Threshold"]
 
-    # Step 2: Store in session_state for stateful editing
+    # Step 2: Store in session state
     if "group_thresholds" not in st.session_state:
         st.session_state.group_thresholds = group_df.copy()
 
@@ -45,11 +46,10 @@ if uploaded_file:
         key="group_aggrid"
     )
 
-    # Step 3: Update session state with any user edits
+    # Step 3: Update session state with edits
     st.session_state.group_thresholds = grid_response["data"]
 
-    st.success("✅ Final group thresholds updated successfully.")
+    st.success("✅ Final thresholds updated.")
 
-    # Optional display
-    if st.checkbox("📄 Show Current Final Threshold Table"):
+    if st.checkbox("📄 Show Group Threshold Table"):
         st.dataframe(st.session_state.group_thresholds)

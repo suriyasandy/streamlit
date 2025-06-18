@@ -1,6 +1,29 @@
 import pandas as pd
 import os
 
+def build_initial_inputs_df(consolidated_dir, selected_product_types, selected_legal_entities, selected_source_systems):
+    records = []
+    pattern = r"(.+)_(.+)_(.+)_(\d{8})_(\d{8})\.csv\.gz"
+
+    for fname in os.listdir(consolidated_dir):
+        match = re.match(pattern, fname)
+        if match:
+            product, legal, source, start_str, end_str = match.groups()
+            if (product in selected_product_types and
+                legal in selected_legal_entities and
+                source in selected_source_systems):
+
+                records.append({
+                    "ProductType": product,
+                    "LegalEntity": legal,
+                    "SourceSystem": source,
+                    "StartDate": start_str,
+                    "EndDate": end_str
+                })
+
+    return pd.DataFrame(records)
+
+
 def filter_and_evaluate_alerts(
     consolidated_dir: str,
     initial_inputs_df: pd.DataFrame,

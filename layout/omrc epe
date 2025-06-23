@@ -1,0 +1,22 @@
+import pandas as pd
+
+# Sample date range
+filter_start = '2024-01-01'
+filter_end = '2024-01-07'  # Short range for demo; use your actual range
+
+# Convert to datetime
+date_range = pd.date_range(start=filter_start, end=filter_end, freq='D')
+date_columns = [date.strftime("%Y-%m-%d") for date in date_range]
+
+# Unique ReasonCodeID from df2
+unique_reason_codes = df2['ReasonCodeID'].unique()
+
+# Create empty result DataFrame
+result_df = pd.DataFrame(index=unique_reason_codes, columns=date_columns)
+
+# Optionally fill with 0 or NaN
+result_df = result_df.fillna(0)
+
+# Display result
+import streamlit as st
+st.dataframe(result_df)

@@ -1,0 +1,40 @@
+Epic Summary:
+Build and operationalize a comprehensive data analytics framework to enable business teams to derive insights, monitor key metrics, and support decision-making using structured and unstructured data across domains.
+
+Epic Goal:
+To develop scalable, reliable, and insightful data analytics pipelines and tools that integrate with existing systems, support various business use cases (e.g., threshold calibration, anomaly detection, risk scoring), and empower users through intuitive visualizations and dashboards.
+
+⸻
+
+Key Objectives:
+	•	Standardize data collection, transformation, and storage across business units.
+	•	Automate data quality checks and anomaly flagging logic.
+	•	Implement advanced statistical and machine learning models for predictive insights.
+	•	Develop user-friendly dashboards to monitor KPIs, thresholds, and alerts.
+	•	Enable self-service analytics for business and operations teams.
+
+⸻
+
+Key Deliverables:
+	•	Unified data ingestion and transformation layer (ETL/ELT).
+	•	Threshold calibration module (manual vs dynamic vs ML).
+	•	Alert impact and simulation engine (e.g., FX off-market trades).
+	•	Interactive dashboards (Streamlit, PowerBI, etc.) for monitoring and decision support.
+	•	Documentation and stakeholder training material.
+
+⸻
+
+Scope Inclusions:
+	•	FX volatility thresholding and backtesting
+	•	Cross-currency synthetic threshold logic
+	•	Trade-level impact analysis and recalibration
+	•	Model explainability and audit logging
+	•	Entity-wise and date-wise alert breakdown
+
+⸻
+
+Benefits / Value:
+	•	Reduced manual effort in trade validation and threshold assignment
+	•	Increased transparency and trust in flagged alerts
+	•	Scalable platform for future model rollouts and business expansion
+	•	Supports audit, compliance, and operational decision-making

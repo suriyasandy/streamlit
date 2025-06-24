@@ -23,44 +23,46 @@ st.dataframe(result_df)
 
 import pandas as pd
 
-# --- Inputs ---
-# df1: key mapping dataframe with ['key', 'highlevelcode', 'summarycode', 'detailedcode']
-# df2: trade-level dataframe with at least ['trade_date', 'reasoncodeid']
+import pandas as pd
 
-# Example inputs:
-# start_date and end_date come from the UI
-start_date = pd.to_datetime('2024-01-01')
-end_date = pd.to_datetime('2024-03-31')
+# Sample input: df1 and df2 already defined
+# df1: key, highlevelcode, summarycode, detailedcode
+# df2: reasoncodeid, trade_date, ...
 
-# Ensure date format
+# Convert trade_date to datetime
 df2['trade_date'] = pd.to_datetime(df2['trade_date'])
 
-# Filter by selected date range
+# Filter by user-selected date range
+start_date = pd.to_datetime('2024-01-01')
+end_date = pd.to_datetime('2024-03-31')
 df2_filtered = df2[(df2['trade_date'] >= start_date) & (df2['trade_date'] <= end_date)].copy()
 
-# Match keys from df1 to reasoncodeid in df2
-df2_filtered['matched_key'] = df2_filtered['reasoncodeid'].apply(
-    lambda x: [k for k in df1['key'] if pd.notnull(x) and k in x]
-)
+# For each row in df2, find matching keys from df1["key"] as substrings
+def find_keys(text):
+    if pd.isnull(text):
+        return []
+    return [k for k in df1['key'] if k in text]
 
-# Explode for multiple matches
-df2_exploded = df2_filtered.explode('matched_key')
+df2_filtered['matched_keys'] = df2_filtered['reasoncodeid'].apply(find_keys)
+
+# Explode for multiple matches per row
+df2_exploded = df2_filtered.explode('matched_keys')
 
 # Split matched and unmatched
-df2_matched = df2_exploded[df2_exploded['matched_key'].notnull() & (df2_exploded['matched_key'] != '')]
-df2_unmatched = df2_exploded[df2_exploded['matched_key'].isnull() | (df2_exploded['matched_key'] == '')]
+df2_matched = df2_exploded[df2_exploded['matched_keys'].notnull() & (df2_exploded['matched_keys'] != '')]
+df2_unmatched = df2_exploded[df2_exploded['matched_keys'].isnull() | (df2_exploded['matched_keys'] == '')]
 
-# Merge to get theme codes from df1
-merged = df2_matched.merge(df1, left_on='matched_key', right_on='key', how='left')
+# Merge matched keys with df1 to get theme hierarchy
+merged = df2_matched.merge(df1, left_on='matched_keys', right_on='key', how='left')
 
-# Decide grouping: daily if ≤31 days, else monthly
+# Grouping logic: daily if <= 31 days, else monthly
 date_diff = (end_date - start_date).days
 if date_diff <= 31:
     merged['group_date'] = merged['trade_date'].dt.date
 else:
     merged['group_date'] = merged['trade_date'].dt.to_period('M').astype(str)
 
-# Group and count
+# Group and count trades
 theme_summary = (
     merged.groupby(['group_date', 'highlevelcode', 'summarycode', 'detailedcode'])
     .size()

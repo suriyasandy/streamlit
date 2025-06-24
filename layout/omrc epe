@@ -20,3 +20,52 @@ result_df = result_df.fillna(0)
 # Display result
 import streamlit as st
 st.dataframe(result_df)
+
+import pandas as pd
+
+# --- Inputs ---
+# df1: key mapping dataframe with ['key', 'highlevelcode', 'summarycode', 'detailedcode']
+# df2: trade-level dataframe with at least ['trade_date', 'reasoncodeid']
+
+# Example inputs:
+# start_date and end_date come from the UI
+start_date = pd.to_datetime('2024-01-01')
+end_date = pd.to_datetime('2024-03-31')
+
+# Ensure date format
+df2['trade_date'] = pd.to_datetime(df2['trade_date'])
+
+# Filter by selected date range
+df2_filtered = df2[(df2['trade_date'] >= start_date) & (df2['trade_date'] <= end_date)].copy()
+
+# Match keys from df1 to reasoncodeid in df2
+df2_filtered['matched_key'] = df2_filtered['reasoncodeid'].apply(
+    lambda x: [k for k in df1['key'] if pd.notnull(x) and k in x]
+)
+
+# Explode for multiple matches
+df2_exploded = df2_filtered.explode('matched_key')
+
+# Split matched and unmatched
+df2_matched = df2_exploded[df2_exploded['matched_key'].notnull() & (df2_exploded['matched_key'] != '')]
+df2_unmatched = df2_exploded[df2_exploded['matched_key'].isnull() | (df2_exploded['matched_key'] == '')]
+
+# Merge to get theme codes from df1
+merged = df2_matched.merge(df1, left_on='matched_key', right_on='key', how='left')
+
+# Decide grouping: daily if ≤31 days, else monthly
+date_diff = (end_date - start_date).days
+if date_diff <= 31:
+    merged['group_date'] = merged['trade_date'].dt.date
+else:
+    merged['group_date'] = merged['trade_date'].dt.to_period('M').astype(str)
+
+# Group and count
+theme_summary = (
+    merged.groupby(['group_date', 'highlevelcode', 'summarycode', 'detailedcode'])
+    .size()
+    .reset_index(name='trade_count')
+    .sort_values(by=['group_date', 'trade_count'], ascending=[True, False])
+)
+
+theme_summary.columns = ['Date', 'High Level Code', 'Summary Code', 'Detailed Code', 'Trade Count']

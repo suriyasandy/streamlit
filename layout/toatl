@@ -1,30 +1,59 @@
-# Step 1: Compute column-wise totals (i.e., sum per date)
-totals = summary_pivot.sum(axis=0)
+import streamlit as st
+import pandas as pd
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
-# Step 2: Append totals as new row, with index 'Total'
-summary_pivot.loc['Total'] = totals
+# ---- Sample Setup (you can replace with your result_df) ----
+# Simulated result_df for illustration
+data = {
+    'reasoncodeid': ['BAD_RATE', 'BAD_RATE', 'OPS_ERROR', 'OPS_ERROR', 'MANUAL_ERROR'],
+    'Date': ['2024-06-24', '2024-06-25', '2024-06-24', '2024-06-25', '2024-06-24']
+}
+result_df = pd.DataFrame(data)
 
-# Separate totals
+# ---- Build summary pivot ----
+summary = (
+    result_df.groupby(['reasoncodeid', 'Date'])
+    .size()
+    .reset_index(name='total_count')
+)
+
+summary_pivot = summary.pivot(index='reasoncodeid', columns='Date', values='total_count').fillna(0).astype(int)
+
+# ---- Add Total row ----
+summary_pivot.loc['Total'] = summary_pivot.sum(numeric_only=True)
+summary_pivot = summary_pivot.reset_index()
+
+# ---- Add a helper column to mark total row (for logic only) ----
+summary_pivot['__is_total__'] = summary_pivot['reasoncodeid'] == 'Total'
+
+# ---- Split data and total to avoid sorting the total row ----
 df_total = summary_pivot[summary_pivot['__is_total__']]
 df_data = summary_pivot[~summary_pivot['__is_total__']]
-summary_final = pd.concat([df_data, df_total], axis=0)
-summary_final = summary_final.drop(columns='__is_total__')
 
-gb.configure_column("reasoncodeid", cellStyle={"fontWeight": "bold"},
-                    condition="params.value === 'Total'")
+# ---- Concatenate to keep 'Total' row always last ----
+summary_final = pd.concat([df_data, df_total], axis=0).drop(columns='__is_total__')
 
-from st_aggrid import AgGrid, GridOptionsBuilder
+# ---- Convert all column names to string for AgGrid compatibility ----
+summary_final.columns = [str(col) for col in summary_final.columns]
+summary_final = summary_final.astype(object)
 
-# Split data and total
-df_total = summary_pivot[summary_pivot['reasoncodeid'] == 'Total']
-df_data = summary_pivot[summary_pivot['reasoncodeid'] != 'Total']
-
-# Combine again with Total at bottom
-summary_final = pd.concat([df_data, df_total], axis=0)
-
-# Build grid options
+# ---- Build AgGrid config ----
 gb = GridOptionsBuilder.from_dataframe(summary_final)
-gb.configure_selection('single')
+gb.configure_selection(selection_mode='single', use_checkbox=False)
 grid_options = gb.build()
 
-AgGrid(summary_final, gridOptions=grid_options, fit_columns_on_grid_load=True)
+# ---- Display in AgGrid ----
+grid_response = AgGrid(
+    summary_final,
+    gridOptions=grid_options,
+    update_mode=GridUpdateMode.SELECTION_CHANGED,
+    fit_columns_on_grid_load=True
+)
+
+# ---- Handle selection safely ----
+selected_row = grid_response.get("selected_rows", [])
+if selected_row and selected_row[0].get("reasoncodeid") != "Total":
+    selected_code = selected_row[0].get("reasoncodeid")
+    st.success(f"You selected: {selected_code}")
+else:
+    st.info("Select a reasoncodeid (except 'Total') to view details.")

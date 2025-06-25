@@ -1,4 +1,4 @@
-# STEP 1: Group and count
+# Step 1: Group and count trades
 grouped = (
     result_df
     .groupby(['reasoncodeid', 'Date', 'HighLevelCode'])
@@ -6,7 +6,7 @@ grouped = (
     .reset_index(name='count')
 )
 
-# STEP 2: Pivot to get desired structure
+# Step 2: Pivot with multi-level columns (Date → HighLevelCode)
 pivot_df = grouped.pivot_table(
     index='reasoncodeid',
     columns=['Date', 'HighLevelCode'],
@@ -14,14 +14,16 @@ pivot_df = grouped.pivot_table(
     fill_value=0
 )
 
-# Optional: flatten MultiIndex columns if needed
-pivot_df.columns = [f"{col[0]} | {col[1]}" for col in pivot_df.columns]
+# Step 3: Optional - reset index for AgGrid display
 pivot_df = pivot_df.reset_index()
 
-from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid import AgGrid
 
-gb = GridOptionsBuilder.from_dataframe(pivot_df)
-gb.configure_default_column(groupable=True, resizable=True, sortable=True)
-grid_options = gb.build()
-
-AgGrid(pivot_df, gridOptions=grid_options, fit_columns_on_grid_load=True)
+AgGrid(pivot_df, fit_columns_on_grid_load=True)
+# Flatten the multi-index columns for visual clarity
+pivot_df.columns = [
+    f"{date} | {hlc}" if hlc != "" else f"{date}"
+    for date, hlc in pivot_df.columns
+]
+with pd.ExcelWriter("output.xlsx", engine="xlsxwriter") as writer:
+    pivot_df.set_index('reasoncodeid').to_excel(writer, sheet_name="ThemeSummary")

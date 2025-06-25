@@ -5,24 +5,23 @@ summary = (
     .reset_index(name='total_count')
 )
 
-# Pivot: reasoncodeid as index, each date as a column
-summary_pivot = summary.pivot(index='reasoncodeid', columns='Date', values='total_count').fillna(0).astype(int)
-summary_pivot = summary_pivot.reset_index()
+# 1. Make sure all column names are strings
+summary_pivot.columns = [str(col) for col in summary_pivot.columns]
 
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+# 2. Convert all data to object (JSON-safe types)
+summary_pivot = summary_pivot.astype(object)
 
-# Configure grid
+# 3. Reset index to ensure no complex indexes
+summary_pivot = summary_pivot.reset_index(drop=True)
+
+# 4. Display in AgGrid
+from st_aggrid import AgGrid, GridOptionsBuilder
+
 gb = GridOptionsBuilder.from_dataframe(summary_pivot)
-gb.configure_selection('single')  # user can select one row
+gb.configure_selection('single')
 grid_options = gb.build()
 
-# Display summary grid
-grid_response = AgGrid(
-    summary_pivot,
-    gridOptions=grid_options,
-    update_mode=GridUpdateMode.SELECTION_CHANGED,
-    fit_columns_on_grid_load=True
-)
+AgGrid(summary_pivot, gridOptions=grid_options)
 
 # Get selected reasoncodeid
 selected_row = grid_response['selected_rows']

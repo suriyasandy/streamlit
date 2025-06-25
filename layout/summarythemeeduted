@@ -1,0 +1,53 @@
+import streamlit as st
+import pandas as pd
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+
+# Dummy result_df
+data = {
+    'reasoncodeid': ['BAD_RATE', 'BAD_RATE', 'OPS_ERROR', 'OPS_ERROR', 'MANUAL_ERROR'],
+    'Date': ['2024-06-24', '2024-06-25', '2024-06-24', '2024-06-25', '2024-06-24'],
+    'HighLevelCode': ['Risk', 'Risk', 'Ops', 'Ops', 'Ops']
+}
+result_df = pd.DataFrame(data)
+
+# --- Summary pivot ---
+summary = result_df.groupby(['reasoncodeid', 'Date']).size().reset_index(name='total_count')
+summary_pivot = summary.pivot(index='reasoncodeid', columns='Date', values='total_count').fillna(0).astype(int)
+
+# Add Total row
+summary_pivot.loc['Total'] = summary_pivot.sum(numeric_only=True)
+summary_pivot = summary_pivot.reset_index()
+summary_pivot['__is_total__'] = summary_pivot['reasoncodeid'] == 'Total'
+df_total = summary_pivot[summary_pivot['__is_total__']]
+df_data = summary_pivot[~summary_pivot['__is_total__']]
+summary_final = pd.concat([df_data, df_total], axis=0).drop(columns='__is_total__')
+summary_final.columns = [str(col) for col in summary_final.columns]
+summary_final = summary_final.astype(object)
+
+# --- AgGrid Display ---
+gb = GridOptionsBuilder.from_dataframe(summary_final)
+gb.configure_selection('single', use_checkbox=False)
+grid_options = gb.build()
+
+grid_response = AgGrid(
+    summary_final,
+    gridOptions=grid_options,
+    update_mode=GridUpdateMode.SELECTION_CHANGED,
+    fit_columns_on_grid_load=True
+)
+
+# --- Show expandable detail below selected row ---
+selected_row = grid_response.get("selected_rows", [])
+if selected_row and selected_row[0].get("reasoncodeid") != "Total":
+    selected_code = selected_row[0]["reasoncodeid"]
+    st.markdown(f"### 🔍 Detail Breakdown for: `{selected_code}`")
+
+    detail_df = result_df[result_df['reasoncodeid'] == selected_code]
+    detail_summary = (
+        detail_df.groupby(['Date', 'HighLevelCode']).size().reset_index(name='count')
+        .pivot(index='Date', columns='HighLevelCode', values='count').fillna(0).astype(int)
+    )
+
+    st.dataframe(detail_summary)
+else:
+    st.info("Click a row (except Total) to view detailed HighLevelCode breakdown.")

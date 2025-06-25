@@ -1,0 +1,27 @@
+# STEP 1: Group and count
+grouped = (
+    result_df
+    .groupby(['reasoncodeid', 'Date', 'HighLevelCode'])
+    .size()
+    .reset_index(name='count')
+)
+
+# STEP 2: Pivot to get desired structure
+pivot_df = grouped.pivot_table(
+    index='reasoncodeid',
+    columns=['Date', 'HighLevelCode'],
+    values='count',
+    fill_value=0
+)
+
+# Optional: flatten MultiIndex columns if needed
+pivot_df.columns = [f"{col[0]} | {col[1]}" for col in pivot_df.columns]
+pivot_df = pivot_df.reset_index()
+
+from st_aggrid import AgGrid, GridOptionsBuilder
+
+gb = GridOptionsBuilder.from_dataframe(pivot_df)
+gb.configure_default_column(groupable=True, resizable=True, sortable=True)
+grid_options = gb.build()
+
+AgGrid(pivot_df, gridOptions=grid_options, fit_columns_on_grid_load=True)

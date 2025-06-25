@@ -37,6 +37,14 @@ if selected_row:
         .size()
         .reset_index(name='count')
     )
+# Calculate total across columns (excluding 'reasoncodeid')
+totals = summary_pivot.drop(columns='reasoncodeid').sum(numeric_only=True)
+
+# Create a row with 'Total' as the reasoncodeid
+total_row = pd.DataFrame([['Total'] + totals.tolist()], columns=summary_pivot.columns)
+
+# Append to the summary_pivot
+summary_pivot_with_total = pd.concat([summary_pivot, total_row], ignore_index=True)
 
     # Pivot: Date as index, HighLevelCode as columns
     detail_pivot = detail_grouped.pivot(index='Date', columns='HighLevelCode', values='count').fillna(0).astype(int)

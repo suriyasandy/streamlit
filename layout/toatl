@@ -3,3 +3,28 @@ totals = summary_pivot.sum(axis=0)
 
 # Step 2: Append totals as new row, with index 'Total'
 summary_pivot.loc['Total'] = totals
+
+# Separate totals
+df_total = summary_pivot[summary_pivot['__is_total__']]
+df_data = summary_pivot[~summary_pivot['__is_total__']]
+summary_final = pd.concat([df_data, df_total], axis=0)
+summary_final = summary_final.drop(columns='__is_total__')
+
+gb.configure_column("reasoncodeid", cellStyle={"fontWeight": "bold"},
+                    condition="params.value === 'Total'")
+
+from st_aggrid import AgGrid, GridOptionsBuilder
+
+# Split data and total
+df_total = summary_pivot[summary_pivot['reasoncodeid'] == 'Total']
+df_data = summary_pivot[summary_pivot['reasoncodeid'] != 'Total']
+
+# Combine again with Total at bottom
+summary_final = pd.concat([df_data, df_total], axis=0)
+
+# Build grid options
+gb = GridOptionsBuilder.from_dataframe(summary_final)
+gb.configure_selection('single')
+grid_options = gb.build()
+
+AgGrid(summary_final, gridOptions=grid_options, fit_columns_on_grid_load=True)

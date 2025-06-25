@@ -1,0 +1,5 @@
+# Step 1: Compute column-wise totals (i.e., sum per date)
+totals = summary_pivot.sum(axis=0)
+
+# Step 2: Append totals as new row, with index 'Total'
+summary_pivot.loc['Total'] = totals

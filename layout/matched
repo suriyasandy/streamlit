@@ -1,0 +1,23 @@
+import pandas as pd
+
+# Sample columns
+# reasoncode_df: ['key', 'HighLevelCode', 'SummaryCode', 'DetailedLevelCode']
+# merged_df: ['trade_id', 'reasoncodeid', ...]
+
+# Step 1: Define a function to find first matched key
+def find_reasoncode_match(reasoncodeid, key_df):
+    if pd.isnull(reasoncodeid):
+        return None
+    for _, row in key_df.iterrows():
+        if row['key'] in reasoncodeid:
+            return row  # Return full matching row
+    return None
+
+# Step 2: Apply function and expand matched values
+matched_rows = merged_df['reasoncodeid'].apply(lambda x: find_reasoncode_match(x, reasoncode_df))
+
+# Step 3: Extract matched columns from the result
+matched_df = pd.DataFrame(matched_rows.tolist(), index=merged_df.index)
+
+# Step 4: Combine with original merged_df
+final_df = pd.concat([merged_df, matched_df], axis=1)

@@ -1,29 +1,46 @@
-# Step 1: Group and count trades
-grouped = (
-    result_df
-    .groupby(['reasoncodeid', 'Date', 'HighLevelCode'])
+# Group by reasoncodeid and Date only (total across HighLevelCodes)
+summary = (
+    result_df.groupby(['reasoncodeid', 'Date'])
     .size()
-    .reset_index(name='count')
+    .reset_index(name='total_count')
 )
 
-# Step 2: Pivot with multi-level columns (Date → HighLevelCode)
-pivot_df = grouped.pivot_table(
-    index='reasoncodeid',
-    columns=['Date', 'HighLevelCode'],
-    values='count',
-    fill_value=0
+# Pivot: reasoncodeid as index, each date as a column
+summary_pivot = summary.pivot(index='reasoncodeid', columns='Date', values='total_count').fillna(0).astype(int)
+summary_pivot = summary_pivot.reset_index()
+
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+
+# Configure grid
+gb = GridOptionsBuilder.from_dataframe(summary_pivot)
+gb.configure_selection('single')  # user can select one row
+grid_options = gb.build()
+
+# Display summary grid
+grid_response = AgGrid(
+    summary_pivot,
+    gridOptions=grid_options,
+    update_mode=GridUpdateMode.SELECTION_CHANGED,
+    fit_columns_on_grid_load=True
 )
 
-# Step 3: Optional - reset index for AgGrid display
-pivot_df = pivot_df.reset_index()
+# Get selected reasoncodeid
+selected_row = grid_response['selected_rows']
+if selected_row:
+    selected_code = selected_row[0]['reasoncodeid']
+    
+    # Filter detail for selected reasoncodeid
+    detail_df = result_df[result_df['reasoncodeid'] == selected_code]
+    
+    # Group by Date and HighLevelCode
+    detail_grouped = (
+        detail_df.groupby(['Date', 'HighLevelCode'])
+        .size()
+        .reset_index(name='count')
+    )
 
-from st_aggrid import AgGrid
+    # Pivot: Date as index, HighLevelCode as columns
+    detail_pivot = detail_grouped.pivot(index='Date', columns='HighLevelCode', values='count').fillna(0).astype(int)
 
-AgGrid(pivot_df, fit_columns_on_grid_load=True)
-# Flatten the multi-index columns for visual clarity
-pivot_df.columns = [
-    f"{date} | {hlc}" if hlc != "" else f"{date}"
-    for date, hlc in pivot_df.columns
-]
-with pd.ExcelWriter("output.xlsx", engine="xlsxwriter") as writer:
-    pivot_df.set_index('reasoncodeid').to_excel(writer, sheet_name="ThemeSummary")
+    st.subheader(f"Detail for: {selected_code}")
+    st.dataframe(detail_pivot)

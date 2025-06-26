@@ -1,0 +1,9 @@
+st.markdown("""
+    <style>
+    .ag-header-cell-label .wrapped-header {
+        white-space: normal !important;
+        text-align: center !important;
+        line-height: 1.2 !important;
+    }
+    </style>
+""", unsafe_allow_html=True)

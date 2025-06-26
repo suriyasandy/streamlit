@@ -1,9 +1,21 @@
 st.markdown("""
     <style>
-    .ag-header-cell-label .wrapped-header {
+    .ag-theme-streamlit .ag-header-cell-label {
+        justify-content: center;
+        text-align: center;
         white-space: normal !important;
-        text-align: center !important;
         line-height: 1.2 !important;
+        height: auto !important;
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+
+    .ag-theme-streamlit .ag-header-cell {
+        height: auto !important;
+    }
+
+    .ag-theme-streamlit .ag-header {
+        height: auto !important;
     }
     </style>
 """, unsafe_allow_html=True)

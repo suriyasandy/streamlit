@@ -33,3 +33,24 @@ AgGrid(
     height=500,                      # adjust height as needed
     enable_enterprise_modules=False
 )
+
+
+
+import math
+
+# Define base row height (AgGrid default is ~28px)
+row_height = 35
+max_visible_rows = 20  # Optional: cap height for very large datasets
+
+# Calculate height
+row_count = df.shape[0]
+visible_rows = min(row_count, max_visible_rows)
+grid_height = visible_rows * row_height + 40  # Add padding for header, scrollbar
+
+# Show AgGrid
+AgGrid(
+    df,
+    gridOptions=grid_options,
+    fit_columns_on_grid_load=True,
+    height=grid_height,  # dynamic height based on content
+)

@@ -11,3 +11,25 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
+from st_aggrid import AgGrid, GridOptionsBuilder
+
+# Assume df is your DataFrame
+gb = GridOptionsBuilder.from_dataframe(df)
+
+# Enable dynamic column sizing
+gb.configure_default_column(wrapText=True, autoHeight=True, resizable=True)
+
+# Optional: make column width flexible (like Excel's auto-fit)
+gb.configure_grid_options(domLayout='normal')  # or 'autoHeight' if needed
+
+grid_options = gb.build()
+
+AgGrid(
+    df,
+    gridOptions=grid_options,
+    fit_columns_on_grid_load=True,   # <-- KEY LINE
+    allow_unsafe_jscode=True,        # required for custom styling
+    height=500,                      # adjust height as needed
+    enable_enterprise_modules=False
+)

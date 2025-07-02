@@ -1,0 +1,65 @@
+📝 JIRA Story: GFX Threshold Analysis Dashboard UI
+
+⸻
+
+Title:
+Implement Streamlit-Based GFX Threshold Analysis Dashboard with Editable Thresholds and Dynamic Summary Drilldowns
+
+⸻
+
+Description:
+As a Market Middle Office Analyst,
+I want a dynamic, interactive dashboard to manage and analyze threshold-based alerts for GFX trade data,
+So that I can review, adjust, and track alert thresholds and their impact across legal entities, currencies, and risk categories.
+
+⸻
+
+Acceptance Criteria:
+	1.	Threshold Input Grid
+	•	Display editable AgGrid table showing currencies and current thresholds.
+	•	Allow user to edit threshold values inline.
+	•	Edits should not be committed until the user clicks “Apply Changes”.
+	•	Upon confirmation, store the updated thresholds in session state and use in downstream analysis.
+	2.	Summary Pivot Table
+	•	Display a pivot-style summary table:
+	•	Rows: reasoncodeid (themes)
+	•	Columns: dates from selected date range
+	•	Cells: trade alert counts
+	•	Add a final row called "Total" that sums all columns.
+	•	The total row should always stay at the bottom and not be affected by sorting.
+	3.	Interactive Drilldown
+	•	When a user selects a row in the summary table:
+	•	Show a breakdown of trade counts by HighLevelCode under each date for the selected reasoncodeid.
+	•	Allow the user to pick a specific column (date + code) to filter into finer-grain detail.
+	4.	AgGrid Enhancements
+	•	Wrap long column headers for clarity (e.g., 2024-06-24 | Risk).
+	•	Adjust AgGrid height dynamically based on number of rows.
+	•	Enable full-width column display.
+	•	Apply consistent formatting and handle serialization for smooth rendering.
+	5.	Table Clearing & Refresh
+	•	Provide buttons to clear/reset tables when re-running threshold impact.
+	•	Ensure previous selections or edits do not persist on reset.
+
+⸻
+
+Technical Details:
+	•	Built using Streamlit and streamlit-aggrid
+	•	Uses GridUpdateMode.NO_UPDATE for safe staged editing
+	•	Handles MultiIndex columns by flattening with string formatting
+	•	Implements st.session_state to persist user inputs and changes
+
+⸻
+
+Out of Scope (for this story):
+	•	Backend API integration for threshold persistence
+	•	Role-based access or multi-user view customization
+
+⸻
+
+Attachments/References:
+	•	UX Mockup: GFX Threshold Summary with Expandable Row Details (attached)
+	•	Sample Data Format: reasoncodeid, Date, HighLevelCode, TradeCount
+
+⸻
+
+Let me know if you want a subtasks breakdown (e.g., Frontend Grid, Summary Pivot, Drilldown View, Styling, Session State Handling, etc.) or want it aligned with a specific JIRA template.
